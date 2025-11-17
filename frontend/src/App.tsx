@@ -1,12 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { ErrorBoundary } from '@components/ErrorBoundary';
 import Layout from '@components/Layout/Layout';
-import LoginPage from '@pages/auth/LoginPage';
-import RegisterPage from '@pages/auth/RegisterPage';
-import DashboardPage from '@pages/DashboardPage';
-import ClientsPage from '@pages/clients/ClientsPage';
-import ProfilePage from '@pages/profile/ProfilePage';
-import AdminPage from '@pages/admin/AdminPage';
+import { LoginPage, RegisterPage, DashboardPage, ClientsPage, ProfilePage, AdminPage, AuditLogPage, PasswordResetPage, DeviceManagementPage } from '@pages/index';
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -23,24 +19,29 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" />} />
-        <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" />} />
+          <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/dashboard" />} />
+          <Route path="/reset-password" element={<PasswordResetPage />} />
 
-        {/* Protected Routes */}
-        <Route element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/clients" element={<ClientsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/admin" element={<AdminPage />} />
-        </Route>
+          {/* Protected Routes */}
+          <Route element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/devices" element={<DeviceManagementPage />} />
+            <Route path="/audit-logs" element={<AuditLogPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+          </Route>
 
-        {/* Default redirect */}
-        <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Default redirect */}
+          <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} />} />
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

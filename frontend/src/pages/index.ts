@@ -4,3 +4,6 @@ export { LoginPage } from './LoginPage';
 export { RegisterPage } from './RegisterPage';
 export { ProfilePage } from './ProfilePage';
 export { AdminPage } from './AdminPage';
+export { AuditLogPage } from './AuditLogPage';
+export { PasswordResetPage } from './PasswordResetPage';
+export { DeviceManagementPage } from './DeviceManagementPage';
