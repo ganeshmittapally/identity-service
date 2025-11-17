@@ -14,6 +14,10 @@ import scopeRoutes from './routes/scopeRoutes';
 import twoFactorRoutes from './routes/twoFactorRoutes';
 import emailRoutes from './routes/emailRoutes';
 import webhookRoutes from './routes/webhookRoutes';
+// Phase 3c: API Versioning, Analytics, Pagination
+import analyticsRoutes from './routes/analyticsRoutes';
+import { versionMiddleware } from './services/ApiVersionService';
+import { metricsMiddleware } from './services/MetricsService';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 // Phase 3: Security & Monitoring
 import { rateLimiters } from './middleware/rateLimitMiddleware';
@@ -55,6 +59,11 @@ export function createApp(): Express {
   app.use(requestLoggerMiddleware);
   app.use(securityEventLogger);
 
+  // Phase 3c: Version middleware & metrics collection
+  app.use(versionMiddleware.extractVersion());
+  app.use(versionMiddleware.autoAdapt());
+  app.use(metricsMiddleware.collectMetrics());
+
   // Rate limiting - Apply to all routes
   app.use(rateLimiters.api);
 
@@ -92,6 +101,7 @@ export function createApp(): Express {
   app.use('/api/v1/clients', rateLimiters.client, clientRoutes);
   app.use('/api/v1/scopes', rateLimiters.scope, scopeRoutes);
   app.use('/api/v1/webhooks', rateLimiters.api, webhookRoutes);
+  app.use('/api/v1/analytics', rateLimiters.api, analyticsRoutes);
 
   // 404 handler
   app.use(notFoundHandler);
