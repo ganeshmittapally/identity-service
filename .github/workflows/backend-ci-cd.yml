@@ -1,0 +1,448 @@
+name: Backend CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci-cd.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/identity-service-backend
+
+jobs:
+  # ==================== BUILD STAGE ====================
+  build:
+    name: Build & Compile
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Compile TypeScript
+        working-directory: backend
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-dist
+          path: backend/dist
+          retention-days: 1
+
+  # ==================== LINT & FORMAT STAGE ====================
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: backend
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Check Prettier formatting
+        working-directory: backend
+        run: npm run format:check
+        continue-on-error: true
+
+  # ==================== TEST STAGE ====================
+  test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    needs: build
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: identity_service_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Setup test database
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/identity_service_test
+        run: npm run migrate:test
+
+      - name: Run unit tests
+        working-directory: backend
+        run: npm run test:unit
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/identity_service_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: Run integration tests
+        working-directory: backend
+        run: npm run test:integration
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/identity_service_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: Generate coverage report
+        working-directory: backend
+        run: npm run test:coverage
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./backend/coverage/lcov.info
+          flags: backend
+          fail_ci_if_error: false
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        with:
+          lcov-file: ./backend/coverage/lcov.info
+
+  # ==================== SECURITY SCAN ====================
+  security:
+    name: Security Checks
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: backend
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run SAST with SonarQube (optional)
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          args: >
+            -Dsonar.projectKey=identity-service-backend
+            -Dsonar.sources=backend/src
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        continue-on-error: true
+
+  # ==================== DOCKER BUILD ====================
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [build, lint, test, security]
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==================== DEPLOY TO STAGING ====================
+  deploy-staging:
+    name: Deploy to Azure Staging
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: https://identity-service-staging.azurewebsites.net
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure App Service (Staging)
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: identity-service-staging
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          slot-name: staging
+
+      - name: Health Check
+        run: |
+          echo "Waiting for service to be healthy..."
+          for i in {1..30}; do
+            if curl -f https://identity-service-staging.azurewebsites.net/health; then
+              echo "Service is healthy"
+              exit 0
+            fi
+            echo "Attempt $i: Service not ready, waiting..."
+            sleep 10
+          done
+          echo "Health check failed"
+          exit 1
+
+      - name: Run smoke tests
+        working-directory: backend
+        run: npm run test:smoke
+        env:
+          API_URL: https://identity-service-staging.azurewebsites.net
+          STAGING: true
+
+      - name: Notify Datadog
+        run: |
+          curl -X POST https://api.datadoghq.com/api/v1/events \
+            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+            -d "{
+              'title': 'Identity Service Deployed to Staging',
+              'text': 'Deployment by ${{ github.actor }}',
+              'priority': 'normal',
+              'tags': ['service:identity-service', 'env:staging', 'action:deploy'],
+              'alert_type': 'info'
+            }"
+
+  # ==================== APPROVAL GATE ====================
+  approval:
+    name: Manual Approval for Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production-approval
+
+    steps:
+      - name: Waiting for approval
+        run: echo "Waiting for manual approval to deploy to production..."
+
+  # ==================== DEPLOY TO PRODUCTION ====================
+  deploy-production:
+    name: Deploy to Azure Production
+    runs-on: ubuntu-latest
+    needs: approval
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: https://identity-service.azurewebsites.net
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure App Service (Production)
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: identity-service
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Health Check
+        run: |
+          echo "Waiting for production service to be healthy..."
+          for i in {1..30}; do
+            if curl -f https://identity-service.azurewebsites.net/health; then
+              echo "Production service is healthy"
+              exit 0
+            fi
+            echo "Attempt $i: Service not ready, waiting..."
+            sleep 10
+          done
+          echo "Health check failed"
+          exit 1
+
+      - name: Run production tests
+        working-directory: backend
+        run: npm run test:production
+        env:
+          API_URL: https://identity-service.azurewebsites.net
+          PRODUCTION: true
+
+      - name: Notify Datadog - Success
+        run: |
+          curl -X POST https://api.datadoghq.com/api/v1/events \
+            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+            -d "{
+              'title': 'Identity Service Successfully Deployed to Production',
+              'text': 'Deployment by ${{ github.actor }}. Commit: ${{ github.sha }}',
+              'priority': 'normal',
+              'tags': ['service:identity-service', 'env:production', 'action:deploy', 'status:success'],
+              'alert_type': 'success'
+            }"
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Production Release - Run ${{ github.run_number }}
+          body: |
+            Production deployment of Identity Service
+            
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref }}
+            Author: ${{ github.actor }}
+          draft: false
+          prerelease: false
+
+  # ==================== ROLLBACK (Manual) ====================
+  rollback:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'rollback'
+    environment:
+      name: production
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Swap production slots
+        run: |
+          az webapp deployment slot swap \
+            --name identity-service \
+            --resource-group identity-service-rg \
+            --slot production
+
+      - name: Notify Datadog - Rollback
+        run: |
+          curl -X POST https://api.datadoghq.com/api/v1/events \
+            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+            -d "{
+              'title': 'Identity Service Production Rollback',
+              'text': 'Rollback triggered by ${{ github.actor }}',
+              'priority': 'high',
+              'tags': ['service:identity-service', 'env:production', 'action:rollback', 'status:warning'],
+              'alert_type': 'warning'
+            }"
+
+# Required Secrets in GitHub:
+# - AZURE_CREDENTIALS: Azure service principal credentials
+# - DATADOG_API_KEY: Datadog API key for notifications
+# - SONAR_TOKEN: SonarQube token for code analysis (optional)

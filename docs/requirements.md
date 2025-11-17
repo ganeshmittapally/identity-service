@@ -1,0 +1,2 @@
+Create new indentity provider service in , first provide me the plan before giving code. 
+The new service will give oauth tokens, able to create scopes, has several flows like client credetials, and others.
