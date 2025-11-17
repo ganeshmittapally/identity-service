@@ -5,6 +5,11 @@ import morgan from 'morgan';
 import { config } from './config/env';
 import { logger, morganLogger } from './config/logger';
 import { AppError } from './types';
+import authRoutes from './routes/authRoutes';
+import tokenRoutes from './routes/tokenRoutes';
+import clientRoutes from './routes/clientRoutes';
+import scopeRoutes from './routes/scopeRoutes';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 export function createApp(): Express {
   const app = express();
@@ -44,53 +49,17 @@ export function createApp(): Express {
     });
   });
 
-  // API v1 routes (placeholder - will be implemented later)
-  app.use('/api/v1/auth', (req: Request, res: Response) => {
-    res.status(200).json({ message: 'Auth routes coming soon' });
-  });
-
-  app.use('/api/v1/oauth', (req: Request, res: Response) => {
-    res.status(200).json({ message: 'OAuth routes coming soon' });
-  });
-
-  app.use('/api/v1/clients', (req: Request, res: Response) => {
-    res.status(200).json({ message: 'Client routes coming soon' });
-  });
-
-  app.use('/api/v1/scopes', (req: Request, res: Response) => {
-    res.status(200).json({ message: 'Scope routes coming soon' });
-  });
+  // API v1 routes
+  app.use('/api/v1/auth', authRoutes);
+  app.use('/api/v1/oauth', tokenRoutes);
+  app.use('/api/v1/clients', clientRoutes);
+  app.use('/api/v1/scopes', scopeRoutes);
 
   // 404 handler
-  app.use((req: Request, res: Response) => {
-    res.status(404).json({
-      error: 'Not Found',
-      message: `Route ${req.method} ${req.path} not found`,
-      statusCode: 404,
-    });
-  });
+  app.use(notFoundHandler);
 
-  // Error handling middleware
-  app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
-    logger.error('Unhandled error:', err);
-
-    if (err instanceof AppError) {
-      return res.status(err.statusCode).json({
-        error: err.name,
-        message: err.message,
-        statusCode: err.statusCode,
-        ...(config.nodeEnv === 'development' && { stack: err.stack }),
-      });
-    }
-
-    const error = err instanceof Error ? err : new Error(String(err));
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: config.nodeEnv === 'development' ? error.message : 'An unexpected error occurred',
-      statusCode: 500,
-      ...(config.nodeEnv === 'development' && { stack: error.stack }),
-    });
-  });
+  // Error handling middleware (must be last)
+  app.use(errorHandler);
 
   return app;
 }
