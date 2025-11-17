@@ -18,6 +18,9 @@ import webhookRoutes from './routes/webhookRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import { versionMiddleware } from './services/ApiVersionService';
 import { metricsMiddleware } from './services/MetricsService';
+// Phase 3d: Admin Dashboard, Health Checks
+import adminRoutes from './routes/adminRoutes';
+import healthRoutes from './routes/healthRoutes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 // Phase 3: Security & Monitoring
 import { rateLimiters } from './middleware/rateLimitMiddleware';
@@ -102,6 +105,8 @@ export function createApp(): Express {
   app.use('/api/v1/scopes', rateLimiters.scope, scopeRoutes);
   app.use('/api/v1/webhooks', rateLimiters.api, webhookRoutes);
   app.use('/api/v1/analytics', rateLimiters.api, analyticsRoutes);
+  app.use('/api/v1/admin', rateLimiters.api, adminRoutes);
+  app.use(healthRoutes);
 
   // 404 handler
   app.use(notFoundHandler);
