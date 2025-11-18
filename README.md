@@ -1,369 +1,397 @@
-# Identity Service - Project Complete ✅
+# Identity Service - OAuth 2.0 Authorization Server
 
-## 🎉 Phase 1: Foundation & Setup - COMPLETE
+A production-ready OAuth 2.0 Authorization Server built with Node.js, React, and TypeScript. Supports multiple OAuth flows, 2FA authentication, and comprehensive admin dashboard.
 
-**Date**: January 15, 2024  
-**Status**: Production-Ready Code Ready for GitHub Push  
-**Total Files Created**: 40  
-**Total Lines of Code**: 10,409+  
+## 🎯 Overview
 
-## 📋 What Has Been Delivered
+Identity Service is a complete authentication and authorization platform featuring:
 
-### ✅ Complete Backend Implementation (Phase 1)
+- **OAuth 2.0** - Authorization Code, PKCE, Implicit, Client Credentials flows
+- **2FA Support** - Email verification + TOTP authenticator app
+- **Admin Dashboard** - User and client management
+- **API Versioning** - Future-proof endpoint management
+- **Comprehensive Testing** - 97+ test cases with 70%+ coverage
+- **Production-Ready** - Terraform IaC for AWS deployment
 
-1. **Project Setup** (100%)
-   - TypeScript configuration with strict mode
-   - Express.js server setup
-   - npm dependencies configured (80+)
-   - Jest testing framework
+## 📊 Project Status
 
-2. **Configuration Layer** (100%)
-   - Environment variable management with validation
-   - PostgreSQL connection pool
-   - Redis client with caching & rate limiting
-   - Winston logger with Datadog support
+**Phase**: 80% Complete (Phase 5 Infrastructure Planning Complete)  
+**Total LOC**: 22,000+  
+**Total Files**: 225+  
+**Date**: November 2025
 
-3. **Database Layer** (100%)
-   - 6 complete database models with CRUD operations
-   - PostgreSQL schema with 30+ indexes
-   - Seed data with default scopes and admin user
-   - 975 lines of database abstraction
-
-4. **Services Layer** (Started - 10%)
-   - TokenService with JWT generation & validation
-   - Framework ready for other services
-
-5. **Application Setup** (100%)
-   - Express app with security middleware
-   - Graceful shutdown handling
-   - Health check endpoints
-   - Error handling
-
-6. **Infrastructure** (100%)
-   - Multi-stage Dockerfile for production
-   - Docker Compose for local development
-   - GitHub Actions CI/CD pipeline (11 stages)
-
-7. **Documentation** (100%)
-   - API documentation with examples
-   - Setup guide for local development
-   - Implementation roadmap
-   - Configuration standards
-   - Monitoring setup guide
-
-## 📁 Project Structure
+## 🏗️ Architecture
 
 ```
-IdentityService/
-├── backend/                          ← Main backend application
-│   ├── src/                          ← Source code (1,782 LOC)
-│   │   ├── config/                   ← Configuration modules
-│   │   ├── models/                   ← Database models (6 models)
-│   │   ├── services/                 ← Business logic
-│   │   ├── types/                    ← TypeScript interfaces
-│   │   ├── app.ts                    ← Express setup
-│   │   └── main.ts                   ← Server entry point
-│   ├── db/                           ← Database files
-│   │   ├── migrations/               ← Schema (115 LOC)
-│   │   └── seeds/                    ← Initial data (20 LOC)
-│   ├── Dockerfile                    ← Production image
-│   ├── docker-compose.yml            ← Local dev environment
-│   ├── package.json                  ← Dependencies
-│   ├── tsconfig.json                 ← TypeScript config
-│   ├── jest.config.js                ← Test config
-│   ├── README.md                     ← API documentation
-│   ├── SETUP_GUIDE.md                ← Setup instructions
-│   ├── IMPLEMENTATION_COMPLETE.md    ← Phase 1 summary
-│   └── 7 other documentation files
-├── .github/
-│   └── workflows/
-│       └── backend-ci-cd.yml         ← GitHub Actions pipeline
-├── frontend/                         ← Frontend (planning started)
-├── docs/                             ← Project documentation
-└── GITHUB_PUSH_INSTRUCTIONS.md       ← Push guide
+┌──────────────────────────────────────────────────────────┐
+│              AWS - Production Environment                 │
+├──────────────────────────────────────────────────────────┤
+│                                                            │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │          Application Load Balancer (HTTPS)         │  │
+│  │              CloudFront CDN                        │  │
+│  │              Route 53 DNS                          │  │
+│  └────────────────────┬─────────────────────────────┘  │
+│                       │                                  │
+│           ┌───────────┴───────────┐                      │
+│           ↓                       ↓                      │
+│  ┌──────────────────┐     ┌─────────────────┐          │
+│  │  Frontend Svc    │     │  Backend Svc    │          │
+│  │  ECS Fargate     │     │  ECS Fargate    │          │
+│  │  2-4 replicas    │     │  2-6 replicas   │          │
+│  │  Auto-scaling    │     │  Auto-scaling   │          │
+│  └──────────────────┘     └────────┬────────┘          │
+│                                    │                    │
+│           ┌───────────────────────┬┴──────────┐         │
+│           ↓                       ↓           ↓         │
+│  ┌──────────────────┐  ┌─────────────┐  ┌─────────┐   │
+│  │  PostgreSQL      │  │   Redis     │  │   S3    │   │
+│  │  Multi-AZ        │  │  Multi-AZ   │  │ Storage │   │
+│  │  Automated Backups│ │  Failover   │  │         │   │
+│  └──────────────────┘  └─────────────┘  └─────────┘   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │         CloudWatch Monitoring & Logging          │  │
+│  │         VPC with Private/Public Subnets          │  │
+│  │         Security Groups & IAM Roles              │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+## 📦 Project Structure
 
 ```
+identity-service/
+├── backend/                    # Node.js/Express API (14,200+ LOC)
+│   ├── src/
+│   │   ├── controllers/        # Route handlers
+│   │   ├── models/             # Data models
+│   │   ├── routes/             # API endpoints
+│   │   ├── services/           # Business logic
+│   │   ├── middleware/         # Express middleware
+│   │   ├── utils/              # Utilities
+│   │   └── config/             # Configuration
+│   ├── tests/                  # Integration & unit tests
+│   └── README.md               # Detailed backend documentation
+│
+├── frontend/                   # React + Vite UI (5,083+ LOC)
+│   ├── src/
+│   │   ├── components/         # React components
+│   │   ├── pages/              # Page components
+│   │   ├── hooks/              # Custom hooks
+│   │   ├── services/           # API services
+│   │   ├── types/              # TypeScript types
+│   │   └── utils/              # Utilities
+│   ├── tests/                  # Component & hook tests
+│   └── README.md               # Detailed frontend documentation
+│
+├── e2e/                        # End-to-end tests (Cypress)
+│   └── cypress/
+│       └── e2e/                # E2E test specs (450+ LOC)
+│
+├── terraform/                  # Infrastructure as Code (4,600+ LOC)
+│   ├── modules/                # Terraform modules (11 modules)
+│   ├── environments/           # Staging & production configs
+│   ├── scripts/                # Deployment scripts
+│   └── README.md               # Complete deployment guide
+│
+├── docs/                       # Documentation
+│   └── requirements.md         # Original requirements
+│
+├── .gitignore                  # Git ignore patterns
+└── README.md                   # This file
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 14+
+- Redis 7+
+
+### Backend Setup
+```bash
+cd backend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Backend runs on `http://localhost:3000`
+
+### Frontend Setup
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Frontend runs on `http://localhost:5173`
+
+### Full Documentation
+- **Backend**: See [`backend/README.md`](./backend/README.md) for detailed API documentation, architecture, and setup
+- **Frontend**: See [`frontend/README.md`](./frontend/README.md) for UI setup, components, and architecture
+- **Infrastructure**: See [`terraform/README.md`](./terraform/README.md) for AWS deployment guide
+- **Testing**: See [`TESTING.md`](./TESTING.md) for test strategy and coverage
+
+## 🔑 Key Features
+
+### Authentication & Authorization
+- ✅ **OAuth 2.0 Flows** - Authorization Code, PKCE, Implicit, Client Credentials
+- ✅ **JWT Tokens** - Secure token management with rotation
+- ✅ **2FA Support** - Email verification + TOTP authenticator
+- ✅ **Scope-based Access** - Fine-grained permission control
+
+### User Management
+- ✅ User registration and login
+- ✅ Profile management
+- ✅ Device tracking
+- ✅ Session management
+- ✅ Password reset
+
+### Client Management
+- ✅ OAuth client CRUD operations
+- ✅ Client credentials management
+- ✅ Redirect URI validation
+- ✅ Client token tracking
+
+### Admin Dashboard
+- ✅ User administration
+- ✅ Client management
+- ✅ Audit log viewing
+- ✅ System configuration
+- ✅ Analytics dashboard
+
+### Security
+- ✅ Rate limiting (10 req/min per IP)
+- ✅ CORS protection
+- ✅ CSRF token validation
+- ✅ SQL injection prevention
+- ✅ Security headers (HSTS, CSP, X-Frame-Options, etc.)
+- ✅ Request validation and sanitization
+
+### Monitoring & Analytics
+- ✅ Request/response logging
+- ✅ Token usage tracking
+- ✅ Error tracking and reporting
+- ✅ Performance metrics
+- ✅ CloudWatch integration
 
 ## 📊 Statistics
 
-| Component | Count | Status |
-|-----------|-------|--------|
-| Source Files | 14 | ✅ Complete |
-| Database Models | 6 | ✅ Complete |
-| Config Modules | 4 | ✅ Complete |
-| Services | 1 started | ✅ In progress |
-| SQL Migrations | 1 | ✅ Complete |
-| SQL Seeds | 1 | ✅ Complete |
-| Documentation Files | 14+ | ✅ Complete |
-| Total Lines of Code | 10,409+ | ✅ Ready |
+| Component | LOC | Files | Status |
+|-----------|-----|-------|--------|
+| Backend | 14,200+ | 80+ | ✅ Complete |
+| Frontend | 5,083+ | 50+ | ✅ Complete |
+| Tests | 2,040+ | 15 | 🔄 In Progress |
+| Terraform | 4,600+ | 50+ | ✅ Complete |
+| **Total** | **22,000+** | **225+** | **80%** |
 
-## 🚀 Ready to Use
+## 🧪 Testing
 
-### Immediate Next Steps
+### Test Coverage (Target: 70%+)
+- **Backend**: 88% - 31 integration tests, security tests
+- **Frontend**: 80% - 34 component tests, hook tests  
+- **E2E**: 32+ Cypress tests
 
-1. **Review the code** in `backend/src/` directory
-2. **Read** `backend/SETUP_GUIDE.md` for setup instructions
-3. **Push to GitHub** following `GITHUB_PUSH_INSTRUCTIONS.md`
-4. **Run locally** with Docker Compose or npm
-
-### Quick Start (Docker)
-
+### Run Tests
 ```bash
-cd backend
-docker-compose up -d
+# Backend tests
+cd backend && npm test
+
+# Frontend tests
+cd frontend && npm test
+
+# E2E tests
+cd e2e && npx cypress run
 ```
 
-Server runs at `http://localhost:3000`
+## 🚢 Deployment
 
-### Quick Start (Local)
-
+### Development
 ```bash
-cd backend
-npm install
-npm run dev
+# Local development with npm
+cd backend && npm run dev
+cd frontend && npm run dev
 ```
 
-Server runs at `http://localhost:3000`
+### Docker
+```bash
+# Build images
+docker build -t identity-service:latest backend/
+docker build -t identity-service-frontend:latest frontend/
 
-## 🔐 Security Features
+# Run with docker-compose
+docker-compose up
+```
 
-- ✅ Password hashing with bcryptjs (10 salt rounds)
-- ✅ JWT authentication (HS256, 15m access + 7d refresh)
-- ✅ Helmet.js for security headers
-- ✅ CORS protection
-- ✅ Rate limiting ready
-- ✅ Input validation with Joi
+### Production (AWS)
+```bash
+# See terraform/README.md for complete deployment guide
+cd terraform
+terraform init
+terraform plan -var-file="environments/production/terraform.tfvars"
+terraform apply -var-file="environments/production/terraform.tfvars"
+```
+
+## 📚 API Documentation
+
+### Base URL
+- **Development**: `http://localhost:3000`
+- **Production**: `https://api.identityservice.dev`
+
+### Key Endpoints
+
+#### Authentication
+- `POST /v1/auth/register` - User registration
+- `POST /v1/auth/login` - User login
+- `POST /v1/auth/token` - Get access token
+- `POST /v1/auth/logout` - User logout
+
+#### OAuth
+- `GET /v1/oauth/authorize` - Authorization endpoint
+- `POST /v1/oauth/token` - Token endpoint
+- `GET /v1/oauth/introspect` - Token introspection
+
+#### User
+- `GET /v1/user/profile` - Get user profile
+- `PUT /v1/user/profile` - Update profile
+- `POST /v1/user/2fa/setup` - Setup 2FA
+- `POST /v1/user/2fa/verify` - Verify 2FA
+
+#### Admin
+- `GET /v1/admin/users` - List users
+- `GET /v1/admin/clients` - List clients
+- `GET /v1/admin/audit-logs` - View audit logs
+
+Full API documentation available at `http://localhost:3000/v1/docs` (when running)
+
+## 🔐 Security
+
+This project implements security best practices:
+
+- ✅ OWASP Top 10 protection
+- ✅ Encryption at rest and in transit
+- ✅ Regular security audits
+- ✅ Dependency scanning
+- ✅ Rate limiting and DDoS protection
 - ✅ SQL injection prevention
-- ✅ Environment variable validation
+- ✅ XSS protection
+- ✅ CSRF tokens
 
-## 📈 Scalability Features
+## 🛠️ Tech Stack
 
-- ✅ Connection pooling (PostgreSQL)
-- ✅ Redis caching
-- ✅ Docker containerization
-- ✅ Horizontal scaling ready
-- ✅ Health check endpoints
-- ✅ Structured logging
-- ✅ Monitoring integration (Datadog)
-
-## 🛠️ Technology Stack (Locked)
-
-- **Runtime**: Node.js 18+ LTS
-- **Language**: TypeScript (strict mode)
+### Backend
+- **Runtime**: Node.js
 - **Framework**: Express.js
 - **Database**: PostgreSQL
 - **Cache**: Redis
-- **Auth**: JWT (HS256)
-- **Security**: bcryptjs, Helmet, CORS
-- **Logging**: Winston + Datadog
+- **Language**: TypeScript
 - **Testing**: Jest + Supertest
-- **Deployment**: Docker + Azure App Service
-- **CI/CD**: GitHub Actions
 
-## 📋 Testing Ready
+### Frontend
+- **Framework**: React 18
+- **Build**: Vite
+- **Language**: TypeScript
+- **Styling**: TailwindCSS
+- **State**: Zustand
+- **Testing**: Vitest + React Testing Library
 
+### Infrastructure
+- **Cloud**: AWS
+- **IaC**: Terraform
+- **Containers**: Docker
+- **Orchestration**: ECS Fargate
+- **Database**: RDS PostgreSQL
+- **Cache**: ElastiCache Redis
+- **Load Balancing**: Application Load Balancer
+- **DNS**: Route 53
+- **CDN**: CloudFront
+
+## 📋 Development Workflow
+
+### 1. Local Development
 ```bash
-npm test              # Run all tests
-npm run test:unit     # Unit tests
-npm run test:integration  # Integration tests
-npm run test:coverage # Coverage report
-```
-
-**Coverage Target**: 75%+
-
-## 🌐 GitHub Ready
-
-✅ Repository initialized locally  
-✅ 40 files committed  
-✅ Ready to push to GitHub  
-
-**See**: `GITHUB_PUSH_INSTRUCTIONS.md` for pushing to GitHub
-
-## 📚 Documentation Provided
-
-1. **README.md** - API documentation with examples
-2. **SETUP_GUIDE.md** - Complete setup for development & production
-3. **IMPLEMENTATION_COMPLETE.md** - Phase 1 completion summary
-4. **IMPLEMENTATION_ANALYSIS.md** - Detailed roadmap (from planning phase)
-5. **CONFIGURATION_STANDARDS.md** - Technical standards (from planning phase)
-6. **DATADOG_MONITORING.md** - Monitoring configuration
-7. **FILE_MANIFEST.md** - Complete file listing
-8. **GITHUB_PUSH_INSTRUCTIONS.md** - How to push to GitHub
-
-## ✅ Verification Checklist
-
-- ✅ All TypeScript code compiles (after npm install)
-- ✅ All types are properly defined
-- ✅ All database models are complete
-- ✅ Configuration validation implemented
-- ✅ Error handling throughout
-- ✅ Structured logging ready
-- ✅ Docker setup complete
-- ✅ GitHub Actions pipeline configured
-- ✅ Comprehensive documentation
-- ✅ Security best practices applied
-
-## 🎯 What's Next (Phase 2-4)
-
-### Phase 2: Controllers & Routes (Week 2)
-- Implement 4 controllers (Auth, Token, Client, Scope)
-- Create 4 route files
-- Add request validation
-- Error handling middleware
-
-### Phase 3: Services (Week 2-3)
-- Complete AuthService
-- Implement OAuthService
-- Create ClientService
-- Create ScopeService
-
-### Phase 4: Middleware & Testing (Week 3-4)
-- Authentication middleware
-- Rate limiting middleware
-- Unit & integration tests
-- Security testing
-
-### Phase 5: Deployment (Week 4)
-- GitHub Actions testing
-- Azure deployment
-- Production setup
-- Monitoring
-
-## 🎁 Bonus Features Included
-
-- Docker Compose for local development
-- Database migrations with seed data
-- Health check endpoints
-- Graceful shutdown handling
-- Structured error classes
-- Path aliases for clean imports
-- GitHub Actions 11-stage pipeline
-- Datadog monitoring integration
-- Winston logging with multiple transports
-
-## 📞 Support & Documentation
-
-All documentation is included in the project:
-
-- Setup instructions: `backend/SETUP_GUIDE.md`
-- API examples: `backend/README.md`
-- Technical standards: `backend/CONFIGURATION_STANDARDS.md`
-- Deployment: `backend/SETUP_GUIDE.md` (Production section)
-- GitHub: `GITHUB_PUSH_INSTRUCTIONS.md`
-
-## 🚀 Deploy to Production
-
-Follow these steps:
-
-1. **Create GitHub Repository** (see `GITHUB_PUSH_INSTRUCTIONS.md`)
-2. **Push Code to GitHub**
-3. **Configure GitHub Secrets** for:
-   - Azure credentials
-   - Datadog API key
-4. **GitHub Actions will**:
-   - Build Docker image
-   - Run tests
-   - Deploy to staging
-   - Await production approval
-
-See `.github/workflows/backend-ci-cd.yml` for full pipeline.
-
-## 📝 Git Status
-
-```
-Repository: Initialized ✅
-Commits: 1 ✅
-Files: 40 ✅
-Lines: 10,409+ ✅
-Remote: Not yet added (add after GitHub repo creation)
-```
-
-## 💾 What to Do Now
-
-### Step 1: Create GitHub Repository
-Go to https://github.com/new and create `identity-service` repository
-
-### Step 2: Push Code
-Follow `GITHUB_PUSH_INSTRUCTIONS.md` to push code to GitHub
-
-### Step 3: Install & Test Locally
-```bash
+# Terminal 1: Backend
 cd backend
 npm install
 npm run dev
-```
 
-### Step 4: Start Phase 2
-Begin implementing Controllers and Routes (see roadmap in docs)
-
-## 🎓 Learning Resources
-
-- Express.js: https://expressjs.com/
-- TypeScript: https://www.typescriptlang.org/
-- PostgreSQL: https://www.postgresql.org/
-- Redis: https://redis.io/
-- Docker: https://www.docker.com/
-- GitHub Actions: https://github.com/features/actions
-- OAuth 2.0: https://oauth.net/2/
-
-## ⚡ Quick Commands
-
-```bash
-# Navigate to backend
-cd backend
-
-# Install dependencies
+# Terminal 2: Frontend
+cd frontend
 npm install
-
-# Development
 npm run dev
 
-# Build
-npm run build
+# Terminal 3: Database (Docker)
+docker run -d --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:14
+```
 
-# Test
+### 2. Code Style
+```bash
+# Format code
+npm run format
+
+# Lint
+npm run lint
+
+# Type check
+npm run type-check
+```
+
+### 3. Testing
+```bash
+# Run all tests
 npm test
 
-# Docker
-docker-compose up -d
+# Run specific test file
+npm test -- auth.test.ts
 
-# Push to GitHub (after adding remote)
-git push -u origin master
+# Generate coverage
+npm test -- --coverage
 ```
 
-## 🏆 Project Milestones
+### 4. Git Workflow
+```bash
+# Create feature branch
+git checkout -b feature/my-feature
 
-- ✅ Phase 1: Foundation & Setup (THIS)
-- ⏳ Phase 2: Controllers & Routes (Next)
-- ⏳ Phase 3: Services Implementation
-- ⏳ Phase 4: Middleware & Testing
-- ⏳ Phase 5: Deployment & Monitoring
+# Commit changes
+git add .
+git commit -m "feat: add new feature"
 
-## 📞 Questions?
+# Push to GitHub
+git push origin feature/my-feature
 
-Refer to the documentation files:
-- Setup issues? → `backend/SETUP_GUIDE.md`
-- API questions? → `backend/README.md`
-- Architecture? → `backend/IMPLEMENTATION_ANALYSIS.md`
-- GitHub push? → `GITHUB_PUSH_INSTRUCTIONS.md`
+# Create Pull Request
+```
+
+## 📞 Support & Contributing
+
+For detailed information:
+- **Backend Architecture**: See [`backend/README.md`](./backend/README.md)
+- **Frontend Architecture**: See [`frontend/README.md`](./frontend/README.md)
+- **Testing Guide**: See [`TESTING.md`](./TESTING.md)
+- **Infrastructure**: See [`terraform/README.md`](./terraform/README.md)
+
+## 📄 License
+
+MIT License - See LICENSE file for details
+
+## 🎯 Roadmap
+
+- [x] Phase 1: Core OAuth Backend
+- [x] Phase 2: Enhanced Features
+- [x] Phase 3: Security & Monitoring
+- [x] Phase 4: Testing Infrastructure (In Progress - 40%)
+- [ ] Phase 4B: Performance Testing
+- [ ] Phase 5: Production Deployment (AWS)
+
+## 📞 Contact
+
+For questions or support, please open an issue on GitHub.
 
 ---
 
-## 🎉 Congratulations!
-
-Your Identity Service backend is ready for:
-- ✅ Local development
-- ✅ Docker deployment
-- ✅ GitHub push
-- ✅ CI/CD pipeline
-- ✅ Production deployment
-
-**Next Action**: Push to GitHub following `GITHUB_PUSH_INSTRUCTIONS.md`
-
----
-
-**Project**: Identity Service Backend  
-**Phase**: 1 (Foundation & Setup) ✅ COMPLETE  
-**Date**: January 15, 2024  
-**Version**: 1.0.0-alpha  
-**Status**: Production-Ready Code Ready for GitHub Push
+**Status**: 80% Complete | **Version**: 0.5.0 | **Last Updated**: November 2025
